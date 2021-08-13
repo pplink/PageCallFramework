@@ -10,6 +10,28 @@
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
 
+#import <CallKit/CallKit.h>
+#import <CallKit/CXError.h>
+
+typedef NS_ENUM(NSInteger, CallActionType) {
+    CallActionTypeStart,
+    CallActionTypeEnd,
+    CallActionTypeAnswer,
+    CallActionTypeMute,
+    CallActionTypeHeld
+};
+
+typedef NS_ENUM(NSInteger, CallKitState) {
+    CallKitStatePending,
+    CallKitStateConnecting,
+    CallKitStateConnected,
+    CallKitStateEnded,
+    CallKitStateEndedWithFailure,
+    CallKitStateEndedUnanswered,
+    CallKitStateEndedReasonAnsweredElsewhere,  // The call was answered on another device
+    CallKitStateEndedReasonDeclinedElsewhere   // The call was declined on another device
+};
+
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol PageCallDelegate <NSObject>
@@ -34,9 +56,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PageCall : NSObject
 
+@property (nonatomic, strong) dispatch_queue_t completionQueue; // Default to mainQueue
+
 @property (nonatomic, weak, nullable) id<PageCallDelegate> delegate;
 @property (nonatomic, weak) UIViewController* mainViewController;
 @property (nonatomic, weak) WKWebView* webView;
+@property (nonatomic, assign) BOOL enableCallKit;
 
 + (PageCall *)sharedInstance;
 
@@ -70,6 +95,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 // PCA runJSFunction
 - (void)runJSFunction:(NSString *)functionName completionHandler:(void (^)(BOOL result))completionHandler;
+
+// PCA addListener
+- (void)addListeners:(NSArray *)listeners;
+
+// CallKit
+- (void)startCallAction;
+- (void)connectedCall;
+- (void)endCallAction;
 
 // Get logs directory path
 - (NSString *)pageCallLogsDirectoryPath;
