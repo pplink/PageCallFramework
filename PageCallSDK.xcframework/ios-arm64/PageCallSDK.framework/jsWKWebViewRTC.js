@@ -5391,3 +5391,11 @@ cordova = Object.create({}, {
         value: "6.0.17"
     }
 });
+
+window.close = function () {
+    var message = {
+        type: 'command',
+        command: 'window.close'
+    };
+    window.webkit.messageHandlers.pageCallSDK.postMessage(message);
+};
