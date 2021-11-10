@@ -99,6 +99,8 @@ NS_ASSUME_NONNULL_BEGIN
 // PCA addListener
 - (void)addListeners:(NSArray *)listeners;
 
+- (void)pageCallReload;
+
 // CallKit
 - (void)startCallAction;
 - (void)connectedCall;

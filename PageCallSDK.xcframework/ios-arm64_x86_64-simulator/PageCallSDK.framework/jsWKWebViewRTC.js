@@ -2389,7 +2389,7 @@ var originalMediaStreamTrack = window.MediaStreamTrack || function dummyMediaStr
 function newMediaStreamTrackId() {
 	return window.crypto.getRandomValues(new Uint32Array(4)).join('-');
  }
-  
+
 function MediaStreamTrack(dataFromEvent) {
 	if (!dataFromEvent) {
 		throw new Error('Illegal constructor');
@@ -2743,6 +2743,15 @@ var
 
 debugerror.log = console.warn.bind(console);
 
+function str2ab(base64) {
+  const binaryString = window.atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (var i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
 
 function RTCDataChannel(peerConnection, label, options, dataFromEvent) {
 	var self = this;
@@ -2815,17 +2824,26 @@ function RTCDataChannel(peerConnection, label, options, dataFromEvent) {
 		exec.execNative(onResultOK, null, 'WKWebViewRTC', 'RTCPeerConnection_RTCDataChannel_setListener', [this.peerConnection.pcId, this.dcId]);
 	}
 
-	function onResultOK(data) {
-		if (data.type) {
-			onEvent.call(self, data);
-		// Special handler for received binary mesage.
-		} else {
-			onEvent.call(self, {
-				type: 'message',
-				message: data
-			});
-		}
-	}
+  function dataToEvent(data) {
+    if (data.type) {
+      return data;
+    }
+    if (data.Type === 'ArrayBuffer') {
+      return {
+        type: 'message',
+        message: str2ab(data.Data)
+      }
+    }
+    return {
+      type: 'message',
+      message
+    }
+  }
+
+  function onResultOK(data) {
+    const event = dataToEvent(data);
+    onEvent.call(self, event);
+  }
 }
 
 RTCDataChannel.prototype = Object.create(EventTarget.prototype);
@@ -2843,6 +2861,38 @@ Object.defineProperty(RTCDataChannel.prototype, 'binaryType', {
 	}
 });
 
+function ab2str(arrayBuffer) {
+  let binary_string = ''
+  bytes = new Uint8Array(arrayBuffer);
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary_string += String.fromCharCode(bytes[i]);
+  }
+  const base64String = window.btoa(binary_string);
+  return base64String;
+}
+
+function getStringRepresentation(data) {
+  let buffer;
+  if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
+    buffer = data;
+  } else if (
+		(window.Int8Array && data instanceof window.Int8Array) ||
+		(window.Uint8Array && data instanceof window.Uint8Array) ||
+		(window.Uint8ClampedArray && data instanceof window.Uint8ClampedArray) ||
+		(window.Int16Array && data instanceof window.Int16Array) ||
+		(window.Uint16Array && data instanceof window.Uint16Array) ||
+		(window.Int32Array && data instanceof window.Int32Array) ||
+		(window.Uint32Array && data instanceof window.Uint32Array) ||
+		(window.Float32Array && data instanceof window.Float32Array) ||
+		(window.Float64Array && data instanceof window.Float64Array) ||
+		(window.DataView && data instanceof window.DataView)
+  ) {
+    buffer = data.buffer;
+  }
+  if (!buffer) throw new Error('Invalid data type');
+
+  return ab2str(buffer);
+}
 
 RTCDataChannel.prototype.send = function (data) {
 	if (isClosed.call(this) || this.readyState !== 'open') {
@@ -2857,25 +2907,11 @@ RTCDataChannel.prototype.send = function (data) {
 
 	if (typeof data === 'string' || data instanceof String) {
 		exec.execNative(null, null, 'WKWebViewRTC', 'RTCPeerConnection_RTCDataChannel_sendString', [this.peerConnection.pcId, this.dcId, data]);
-	} else if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
-		exec.execNative(null, null, 'WKWebViewRTC', 'RTCPeerConnection_RTCDataChannel_sendBinary', [this.peerConnection.pcId, this.dcId, data]);
-	} else if (
-		(window.Int8Array && data instanceof window.Int8Array) ||
-		(window.Uint8Array && data instanceof window.Uint8Array) ||
-		(window.Uint8ClampedArray && data instanceof window.Uint8ClampedArray) ||
-		(window.Int16Array && data instanceof window.Int16Array) ||
-		(window.Uint16Array && data instanceof window.Uint16Array) ||
-		(window.Int32Array && data instanceof window.Int32Array) ||
-		(window.Uint32Array && data instanceof window.Uint32Array) ||
-		(window.Float32Array && data instanceof window.Float32Array) ||
-		(window.Float64Array && data instanceof window.Float64Array) ||
-		(window.DataView && data instanceof window.DataView)
-	) {
-		exec.execNative(null, null, 'WKWebViewRTC', 'RTCPeerConnection_RTCDataChannel_sendBinary', [this.peerConnection.pcId, this.dcId, data.buffer]);
 	} else {
-		throw new Error('invalid data type');
+    const stringifiedData = getStringRepresentation(data);
+		exec.execNative(null, null, 'WKWebViewRTC', 'RTCPeerConnection_RTCDataChannel_sendBinary', [this.peerConnection.pcId, this.dcId, stringifiedData]);
 	}
-};
+}
 
 
 RTCDataChannel.prototype.close = function () {
@@ -3658,7 +3694,7 @@ RTCPeerConnection.prototype.addTrack = function (track, stream) {
 	}
 
 	this.localTracks[track.id] = track;
-	
+
 	return new RTCRtpSender({
 		track: track
 	});
@@ -3701,12 +3737,12 @@ RTCPeerConnection.prototype.removeTrack = function (sender) {
 		for (id in this.localTracks) {
 			if (this.localTracks.hasOwnProperty(id)) {
 				if (track.id === id) {
-					exec.execNative(null, null, 'WKWebViewRTC', 'RTCPeerConnection_removeTrack', [this.pcId, track.id, null]);	
+					exec.execNative(null, null, 'WKWebViewRTC', 'RTCPeerConnection_removeTrack', [this.pcId, track.id, null]);
 					delete this.localTracks[track.id];
 				}
 			}
 		}
-	}	
+	}
 };
 
 RTCPeerConnection.prototype.getStreamById = function (id) {
@@ -3963,7 +3999,7 @@ function onEvent(data) {
 			track.addEventListener('ended', function () {
 				delete self.remoteTracks[track.id];
 			});
-			
+
 			break;
 
 		case 'addstream':
@@ -4398,7 +4434,7 @@ function getUserMedia(constraints) {
 
 	// Get video constraints
 	if (videoRequested) {
-		
+
 		// Handle object video constraints
 		newConstraints.video = {};
 
@@ -4932,8 +4968,8 @@ function registerGlobals(doNotRestoreCallbacksSupport) {
 
  	// Prevent WebRTC-adapter to overide navigator.mediaDevices after shim is applied since ios 14.3
 	Object.defineProperty(
-		navigator, 
-		'mediaDevices', 
+		navigator,
+		'mediaDevices',
 		{
 			value: new MediaDevices(),
 			writable: false
@@ -4944,7 +4980,7 @@ function registerGlobals(doNotRestoreCallbacksSupport) {
 			writable: false,
 			value: 'static'
 		});
-	 
+
 	window.RTCPeerConnection                = RTCPeerConnection;
 	window.webkitRTCPeerConnection          = RTCPeerConnection;
 	window.RTCSessionDescription            = RTCSessionDescription;
