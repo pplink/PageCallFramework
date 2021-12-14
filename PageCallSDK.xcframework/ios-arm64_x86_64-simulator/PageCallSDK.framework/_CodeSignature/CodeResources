@@ -4,10 +4,6 @@
 <dict>
 	<key>files</key>
 	<dict>
-		<key>Documents/PCConfig.plist</key>
-		<data>
-		ZZYaiwH/m1aAok6qxtw53gIvjJE=
-		</data>
 		<key>Headers/PageCall.h</key>
 		<data>
 		dTIEsYKf/6So7s7Y1MdTg5xz4CQ=
@@ -101,13 +97,6 @@
 	</dict>
 	<key>files2</key>
 	<dict>
-		<key>Documents/PCConfig.plist</key>
-		<dict>
-			<key>hash2</key>
-			<data>
-			b2N+SSKD4NXz8t/rARIBb/7oGT4n+6tiB3ign+hFJes=
-			</data>
-		</dict>
 		<key>Headers/PageCall.h</key>
 		<dict>
 			<key>hash2</key>
