@@ -62,6 +62,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, weak) UIViewController* mainViewController;
 @property (nonatomic, weak) WKWebView* webView;
 @property (nonatomic, assign) BOOL enableCallKit;
+@property (nonatomic, assign) BOOL forceLogRedirect;
 
 + (PageCall *)sharedInstance;
 

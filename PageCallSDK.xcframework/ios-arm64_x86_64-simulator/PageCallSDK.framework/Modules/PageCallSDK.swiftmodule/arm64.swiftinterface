@@ -20,4 +20,10 @@ import _Concurrency
 extension PageCallSDK.WKWebViewRTC : WebKit.WKScriptMessageHandler {
   @objc dynamic public func userContentController(_ userContentController: WebKit.WKUserContentController, didReceive message: WebKit.WKScriptMessage)
 }
+@_inheritsConvenienceInitializers @objc public class Logger : ObjectiveC.NSObject {
+  @objc public static func startRedirect(handler: @escaping (_ message: Swift.String) -> Swift.Void) -> Swift.Int
+  @objc public static func stopRedirect(handlerId: Swift.Int)
+  @objc override dynamic public init()
+  @objc deinit
+}
 public func objc_getx<TargetObject, AssociatedObject>(object getObject: @autoclosure () -> AssociatedObject, associatedTo target: TargetObject, withConstPtrKey ptr: Swift.UnsafeRawPointer) -> AssociatedObject where TargetObject : AnyObject, AssociatedObject : AnyObject
